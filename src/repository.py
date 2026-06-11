@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any
 
 from src.documents import TextDocument
@@ -13,6 +13,10 @@ def _vector_literal(values: Sequence[float]) -> str:
     if not values:
         raise ValueError("Embedding vector cannot be empty")
     return "[" + ",".join(str(float(value)) for value in values) + "]"
+
+
+def _parse_vector_literal(value: str) -> list[float]:
+    return [float(item) for item in value.strip("[]").split(",") if item]
 
 
 def _cosine_similarity(left: Sequence[float], right: Sequence[float]) -> float:
@@ -34,6 +38,13 @@ class SearchResult:
     document_id: int
     text: str
     similarity: float
+
+
+@dataclass(frozen=True)
+class VectorRecord:
+    document_id: int
+    text: str
+    embedding: list[float]
 
 
 class PostgresDocumentRepository:
@@ -155,6 +166,46 @@ class PostgresDocumentRepository:
                     for row in cursor.fetchall()
                 ]
 
+    def list_vector_records(self) -> list[VectorRecord]:
+        import psycopg
+
+        with psycopg.connect(self.database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT d.id, d.content, dv.embedding::text
+                    FROM document_vectors dv
+                    JOIN documents d ON d.id = dv.document_id
+                    ORDER BY d.id
+                    """
+                )
+                return [
+                    VectorRecord(
+                        document_id=int(row[0]),
+                        text=str(row[1]),
+                        embedding=_parse_vector_literal(str(row[2])),
+                    )
+                    for row in cursor.fetchall()
+                ]
+
+    def get_document_texts(self, document_ids: Sequence[int]) -> dict[int, str]:
+        import psycopg
+
+        if not document_ids:
+            return {}
+
+        with psycopg.connect(self.database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id, content
+                    FROM documents
+                    WHERE id = ANY(%s)
+                    """,
+                    (list(document_ids),),
+                )
+                return {int(row[0]): str(row[1]) for row in cursor.fetchall()}
+
 
 class InMemoryDocumentRepository:
     def __init__(self) -> None:
@@ -189,3 +240,21 @@ class InMemoryDocumentRepository:
         return sorted(results, key=lambda result: result.similarity, reverse=True)[
             :top_k
         ]
+
+    def list_vector_records(self) -> list[VectorRecord]:
+        return [
+            VectorRecord(
+                document_id=record["id"],
+                text=record["document"].content,
+                embedding=list(record["embedding"]),
+            )
+            for record in self.saved
+        ]
+
+    def get_document_texts(self, document_ids: Sequence[int]) -> dict[int, str]:
+        requested_ids = set(document_ids)
+        return {
+            record["id"]: record["document"].content
+            for record in self.saved
+            if record["id"] in requested_ids
+        }
