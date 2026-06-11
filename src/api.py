@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from src.config import Settings
 from src.embeddings import SentenceTransformerEmbedder
 from src.repository import PostgresDocumentRepository
-from src.search import SemanticSearchService
+from src.search import SemanticSearchService, select_search_repository
 
 
 class SearchRequest(BaseModel):
@@ -28,9 +28,16 @@ def build_search_service() -> SemanticSearchService:
         settings.database_url,
         settings.embedding_dimension,
     )
+    search_repository = select_search_repository(
+        backend=settings.search_backend,
+        document_repository=repository,
+        embedding_dimension=settings.embedding_dimension,
+        hnsw_index_path=settings.hnsw_index_path,
+        hnsw_max_elements=settings.hnsw_max_elements,
+    )
     return SemanticSearchService(
         embedder=SentenceTransformerEmbedder(settings.embedding_model_name),
-        repository=repository,
+        repository=search_repository,
     )
 
 

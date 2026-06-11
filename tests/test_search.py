@@ -1,8 +1,9 @@
 import pytest
 
 from src.documents import TextDocument
+from src.index import HnswSearchRepository
 from src.repository import InMemoryDocumentRepository, _cosine_similarity
-from src.search import SemanticSearchService
+from src.search import SemanticSearchService, select_search_repository
 
 
 class FakeEmbedder:
@@ -51,3 +52,31 @@ def test_semantic_search_rejects_empty_queries() -> None:
 
     with pytest.raises(ValueError, match="query cannot be empty"):
         service.search("   ")
+
+
+def test_select_search_repository_uses_brute_force_backend() -> None:
+    repository = InMemoryDocumentRepository()
+
+    selected = select_search_repository("brute_force", repository, 2)
+
+    assert selected is repository
+
+
+def test_select_search_repository_uses_hnsw_backend(tmp_path) -> None:
+    repository = InMemoryDocumentRepository()
+    repository.save(TextDocument("a.txt", "alpha"), [1.0, 0.0], "fake-model")
+
+    selected = select_search_repository(
+        "hnsw",
+        repository,
+        2,
+        hnsw_index_path=str(tmp_path / "documents.hnsw"),
+    )
+
+    assert isinstance(selected, HnswSearchRepository)
+    assert selected.search([1.0, 0.0], top_k=1)[0].text == "alpha"
+
+
+def test_select_search_repository_rejects_unknown_backend() -> None:
+    with pytest.raises(ValueError, match="Unsupported search backend"):
+        select_search_repository("unknown", InMemoryDocumentRepository(), 2)

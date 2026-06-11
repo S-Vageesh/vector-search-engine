@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Protocol
 
 from src.embeddings import Embedder
+from src.index import HnswSearchRepository
 from src.repository import SearchResult
 
 
@@ -25,3 +26,24 @@ class SemanticSearchService:
 
         query_embedding = self.embedder.embed(query)
         return self.repository.search(query_embedding, top_k)
+
+
+def select_search_repository(
+    backend: str,
+    document_repository,
+    embedding_dimension: int,
+    hnsw_index_path: str | None = None,
+    hnsw_max_elements: int = 100000,
+) -> SearchRepository:
+    normalized_backend = backend.strip().lower()
+    if normalized_backend == "brute_force":
+        return document_repository
+    if normalized_backend == "hnsw":
+        return HnswSearchRepository.load_or_build_from_repository(
+            document_repository=document_repository,
+            dimension=embedding_dimension,
+            index_path=hnsw_index_path,
+            max_elements=hnsw_max_elements,
+        )
+
+    raise ValueError(f"Unsupported search backend: {backend}")

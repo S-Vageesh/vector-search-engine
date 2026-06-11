@@ -9,6 +9,9 @@ class Settings:
     database_url: str
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_dimension: int = 384
+    search_backend: str = "brute_force"
+    hnsw_index_path: str = "data/indexes/documents.hnsw"
+    hnsw_max_elements: int = 100000
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -23,5 +26,10 @@ class Settings:
             ),
             embedding_dimension=int(
                 os.getenv("EMBEDDING_DIMENSION", str(cls.embedding_dimension))
+            ),
+            search_backend=os.getenv("SEARCH_BACKEND", cls.search_backend),
+            hnsw_index_path=os.getenv("HNSW_INDEX_PATH", cls.hnsw_index_path),
+            hnsw_max_elements=int(
+                os.getenv("HNSW_MAX_ELEMENTS", str(cls.hnsw_max_elements))
             ),
         )
