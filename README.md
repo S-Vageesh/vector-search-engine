@@ -49,6 +49,14 @@ Brute Force Search   HNSW Index
                 v
         PostgreSQL + pgvector
 ```
+```mermaid
+graph TD
+A[React Frontend] --> B[FastAPI Backend]
+B --> C[Semantic Search Service]
+C --> D[HNSW Index]
+C --> E[PostgreSQL + pgvector]
+E --> F[Document Storage]
+```
 
 ## Technology Stack
 
