@@ -12,6 +12,9 @@ class SearchRepository(Protocol):
     def search(self, embedding: Sequence[float], top_k: int) -> list[SearchResult]:
         ...
 
+    def count_documents(self) -> int:
+        ...
+
 
 class SemanticSearchService:
     def __init__(self, embedder: Embedder, repository: SearchRepository) -> None:
@@ -26,6 +29,9 @@ class SemanticSearchService:
 
         query_embedding = self.embedder.embed(query)
         return self.repository.search(query_embedding, top_k)
+
+    def count_documents(self) -> int:
+        return self.repository.count_documents()
 
 
 def select_search_repository(

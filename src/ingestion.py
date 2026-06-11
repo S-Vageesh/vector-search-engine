@@ -35,6 +35,9 @@ class DocumentIngestionPipeline:
 
     def ingest_file(self, path: str | Path) -> int:
         document = self.loader.load(path)
+        return self.ingest_document(document)
+
+    def ingest_document(self, document: TextDocument) -> int:
         embedding = self.embedder.embed(document.content)
         document_id = self.repository.save(document, embedding, self.embedder.model_name)
         if self.vector_index is not None:

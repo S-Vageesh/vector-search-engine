@@ -44,7 +44,7 @@ export function searchDocuments(query, topK) {
   });
 }
 
-export async function uploadTextDocument(file, backendPaths = []) {
+export async function uploadTextDocument(files, backendPaths = []) {
   const uploadPath = ["/upload", "/documents/upload", "/ingest", "/documents/ingest"].find(
     (path) => backendPaths.includes(path)
   );
@@ -54,7 +54,10 @@ export async function uploadTextDocument(file, backendPaths = []) {
   }
 
   const formData = new FormData();
-  formData.append("file", file);
+  const uploadFiles = Array.isArray(files) ? files : [files];
+  for (const file of uploadFiles) {
+    formData.append("files", file);
+  }
 
   const response = await fetch(`${API_BASE}${uploadPath}`, {
     method: "POST",

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from src.documents import TextFileLoader
+from src.documents import TextDocument
 from src.ingestion import DocumentIngestionPipeline
 from src.repository import InMemoryDocumentRepository
 
@@ -55,3 +56,19 @@ def test_ingestion_pipeline_updates_incremental_vector_index(tmp_path: Path) -> 
 
     assert document_id == 1
     assert vector_index.insertions == [(1, [0.1, 0.2, 0.3])]
+
+
+def test_ingestion_pipeline_accepts_document_objects() -> None:
+    repository = InMemoryDocumentRepository()
+    pipeline = DocumentIngestionPipeline(
+        loader=TextFileLoader(),
+        embedder=FakeEmbedder(),
+        repository=repository,
+    )
+
+    document_id = pipeline.ingest_document(
+        TextDocument(source_path="upload://document.txt", content="semantic search")
+    )
+
+    assert document_id == 1
+    assert repository.saved[0]["document"].source_path == "upload://document.txt"

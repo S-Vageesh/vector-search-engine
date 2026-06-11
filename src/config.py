@@ -3,6 +3,13 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    load_dotenv = None
+
+if load_dotenv is not None:
+    load_dotenv()
 
 @dataclass(frozen=True)
 class Settings:

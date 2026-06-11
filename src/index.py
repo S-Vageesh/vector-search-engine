@@ -15,6 +15,9 @@ class VectorRecordRepository(Protocol):
     def get_document_texts(self, document_ids: Sequence[int]) -> dict[int, str]:
         ...
 
+    def count_documents(self) -> int:
+        ...
+
 
 @dataclass(frozen=True)
 class VectorNeighbor:
@@ -189,14 +192,23 @@ class HnswSearchRepository:
 
     def search(self, embedding: Sequence[float], top_k: int) -> list[SearchResult]:
         neighbors = self.index.search(embedding, top_k)
-        texts = self.document_repository.get_document_texts(
-            [neighbor.document_id for neighbor in neighbors]
-        )
+        records = {
+            record.document_id: record
+            for record in self.document_repository.list_vector_records()
+        }
         return [
             SearchResult(
                 document_id=neighbor.document_id,
-                text=texts.get(neighbor.document_id, ""),
+                text=records.get(neighbor.document_id).text
+                if neighbor.document_id in records
+                else "",
                 similarity=neighbor.similarity,
+                filename=records.get(neighbor.document_id).filename
+                if neighbor.document_id in records
+                else "",
             )
             for neighbor in neighbors
         ]
+
+    def count_documents(self) -> int:
+        return self.document_repository.count_documents()
