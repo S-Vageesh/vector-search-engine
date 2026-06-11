@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from src.documents import TextDocument
 from src.repository import InMemoryDocumentRepository
-from src.vector_index import HnswSearchRepository
+from src.index import HnswSearchRepository
 
 
 @dataclass(frozen=True)

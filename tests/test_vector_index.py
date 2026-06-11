@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 
 from src.documents import TextDocument
+from src.index import HnswSearchRepository, HnswVectorIndex
 from src.repository import InMemoryDocumentRepository
-from src.vector_index import HnswSearchRepository, HnswVectorIndex
 
 
 def _repository_with_vectors() -> InMemoryDocumentRepository:
@@ -52,6 +52,27 @@ def test_hnsw_index_persists_to_disk(tmp_path: Path) -> None:
 
     assert index_path.exists()
     assert results[0].document_id == 1
+
+
+def test_hnsw_index_loads_existing_index_on_startup(tmp_path: Path) -> None:
+    index_path = tmp_path / "documents.hnsw"
+    repository = _repository_with_vectors()
+    first_repository = HnswSearchRepository.load_or_build_from_repository(
+        repository,
+        dimension=2,
+        index_path=index_path,
+    )
+    first_repository.add(4, [0.95, 0.05])
+
+    second_repository = HnswSearchRepository.load_or_build_from_repository(
+        repository,
+        dimension=2,
+        index_path=index_path,
+    )
+
+    results = second_repository.search([0.95, 0.05], top_k=1)
+
+    assert results[0].document_id == 4
 
 
 def test_hnsw_index_validates_dimensions() -> None:

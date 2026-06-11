@@ -15,21 +15,31 @@ class DocumentRepository(Protocol):
         ...
 
 
+class IncrementalVectorIndex(Protocol):
+    def add(self, document_id: int, embedding: list[float]) -> None:
+        ...
+
+
 class DocumentIngestionPipeline:
     def __init__(
         self,
         loader: TextFileLoader,
         embedder: Embedder,
         repository: DocumentRepository,
+        vector_index: IncrementalVectorIndex | None = None,
     ) -> None:
         self.loader = loader
         self.embedder = embedder
         self.repository = repository
+        self.vector_index = vector_index
 
     def ingest_file(self, path: str | Path) -> int:
         document = self.loader.load(path)
         embedding = self.embedder.embed(document.content)
-        return self.repository.save(document, embedding, self.embedder.model_name)
+        document_id = self.repository.save(document, embedding, self.embedder.model_name)
+        if self.vector_index is not None:
+            self.vector_index.add(document_id, embedding)
+        return document_id
 
 
 def build_postgres_pipeline(
