@@ -30,25 +30,6 @@ The system supports document ingestion, embedding generation, vector storage, se
 
 ## System Architecture
 
-```text
-React Frontend
-       |
-       v
-FastAPI Backend
-       |
-       v
-Search Service
-       |
-       +----------------+
-       |                |
-       v                v
-Brute Force Search   HNSW Index
-       |                |
-       +----------------+
-                |
-                v
-        PostgreSQL + pgvector
-```
 ```mermaid
 graph TD
 A[React Frontend] --> B[FastAPI Backend]
