@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import math
+from dataclasses import dataclass
 from collections.abc import Sequence
 from typing import Any
 
@@ -11,6 +13,27 @@ def _vector_literal(values: Sequence[float]) -> str:
     if not values:
         raise ValueError("Embedding vector cannot be empty")
     return "[" + ",".join(str(float(value)) for value in values) + "]"
+
+
+def _cosine_similarity(left: Sequence[float], right: Sequence[float]) -> float:
+    if len(left) != len(right):
+        raise ValueError("Vectors must have the same dimension")
+    if not left:
+        raise ValueError("Vectors cannot be empty")
+
+    dot_product = sum(a * b for a, b in zip(left, right))
+    left_norm = math.sqrt(sum(value * value for value in left))
+    right_norm = math.sqrt(sum(value * value for value in right))
+    if left_norm == 0 or right_norm == 0:
+        return 0.0
+    return dot_product / (left_norm * right_norm)
+
+
+@dataclass(frozen=True)
+class SearchResult:
+    document_id: int
+    text: str
+    similarity: float
 
 
 class PostgresDocumentRepository:
@@ -93,6 +116,45 @@ class PostgresDocumentRepository:
                 )
                 return int(document_id)
 
+    def search(self, embedding: Sequence[float], top_k: int) -> list[SearchResult]:
+        import psycopg
+
+        if top_k <= 0:
+            raise ValueError("top_k must be greater than zero")
+        if len(embedding) != self.embedding_dimension:
+            raise ValueError(
+                "Embedding dimension mismatch: "
+                f"expected {self.embedding_dimension}, got {len(embedding)}"
+            )
+
+        with psycopg.connect(self.database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT
+                        d.id,
+                        d.content,
+                        1 - (dv.embedding <=> %s::vector) AS similarity
+                    FROM document_vectors dv
+                    JOIN documents d ON d.id = dv.document_id
+                    ORDER BY dv.embedding <=> %s::vector
+                    LIMIT %s
+                    """,
+                    (
+                        _vector_literal(embedding),
+                        _vector_literal(embedding),
+                        top_k,
+                    ),
+                )
+                return [
+                    SearchResult(
+                        document_id=int(row[0]),
+                        text=str(row[1]),
+                        similarity=float(row[2]),
+                    )
+                    for row in cursor.fetchall()
+                ]
+
 
 class InMemoryDocumentRepository:
     def __init__(self) -> None:
@@ -111,3 +173,19 @@ class InMemoryDocumentRepository:
             }
         )
         return document_id
+
+    def search(self, embedding: Sequence[float], top_k: int) -> list[SearchResult]:
+        if top_k <= 0:
+            raise ValueError("top_k must be greater than zero")
+
+        results = [
+            SearchResult(
+                document_id=record["id"],
+                text=record["document"].content,
+                similarity=_cosine_similarity(record["embedding"], embedding),
+            )
+            for record in self.saved
+        ]
+        return sorted(results, key=lambda result: result.similarity, reverse=True)[
+            :top_k
+        ]
