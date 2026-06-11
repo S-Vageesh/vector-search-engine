@@ -1,2 +1,3 @@
-# vector-search-engine
-Semantic search engine with vector embeddings, HNSW indexing, hybrid retrieval, and benchmark-driven optimization.
+Vector Search Engine
+
+A high-performance semantic search system that leverages embeddings and HNSW-based approximate nearest neighbor indexing for fast and scalable document retrieval.
