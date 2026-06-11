@@ -1,133 +1,190 @@
 # Vector Search Engine
 
-A high-performance semantic search engine that leverages vector embeddings, PostgreSQL, HNSW-based Approximate Nearest Neighbor (ANN) indexing, and FastAPI to provide fast and scalable document retrieval.
+A full-stack semantic search engine that enables meaning-based document retrieval using dense vector embeddings, Approximate Nearest Neighbor (ANN) search, and modern web technologies.
 
-## Overview
-
-Traditional keyword-based search systems rely on exact word matches, which often fail to capture semantic meaning. This project implements a Vector Search Engine capable of understanding the meaning of text using embeddings and retrieving the most relevant documents through vector similarity search.
-
-The system supports document ingestion, embedding generation, vector storage, semantic retrieval, HNSW indexing, benchmarking, and a React-based user interface.
+Built with FastAPI, React, PostgreSQL, HNSW indexing, and Sentence Transformers.
 
 ## Features
 
-### Core Features
-
-* Document ingestion pipeline
-* Embedding generation using Sentence Transformers
-* PostgreSQL-based vector storage
-* Semantic similarity search
+* Semantic document search using vector embeddings
+* Approximate Nearest Neighbor retrieval with HNSW indexing
+* Multi-file document ingestion
+* React-based web interface
 * FastAPI REST API
-* React frontend for search and document management
-
-### Advanced Features
-
-* HNSW (Hierarchical Navigable Small World) Approximate Nearest Neighbor indexing
-* Incremental index updates
-* Persistent index storage
-* Benchmarking suite for ANN evaluation
+* PostgreSQL persistence layer
+* pgvector support with local fallback mode
 * Automated test suite
-* Dockerized deployment support
+* Docker-ready architecture
+* Modern frontend dashboard
 
-## System Architecture
+## Architecture
 
-```mermaid
-graph TD
-A[React Frontend] --> B[FastAPI Backend]
-B --> C[Semantic Search Service]
-C --> D[HNSW Index]
-C --> E[PostgreSQL + pgvector]
-E --> F[Document Storage]
+```text
+Documents
+    │
+    ▼
+Sentence Transformers
+    │
+    ▼
+Vector Embeddings
+    │
+    ▼
+HNSW Index
+    │
+    ▼
+Nearest Neighbor Search
+    │
+    ▼
+FastAPI Backend
+    │
+    ▼
+React Frontend
 ```
 
 ## Technology Stack
 
 ### Backend
 
-* Python
+* Python 3.11
 * FastAPI
 * PostgreSQL
-* SQLAlchemy
-* pgvector
-
-### Machine Learning
-
+* psycopg
 * Sentence Transformers
-* Vector Embeddings
-
-### Search & Indexing
-
-* HNSWLib
-* Cosine Similarity Search
+* hnswlib
+* pytest
 
 ### Frontend
 
 * React
 * Vite
+* TypeScript
 
 ### Infrastructure
 
 * Docker
-* Docker Compose
-
-### Testing
-
-* Pytest
+* GitHub
 
 ## Project Structure
 
 ```text
 vector-search-engine/
 │
-├── frontend/           # React frontend
-├── src/                # Backend source code
-├── tests/              # Automated tests
-├── benchmarks/         # Benchmarking suite
-├── docker/             # Docker configuration
-├── docs/               # Documentation
-├── config/             # Configuration files
+├── frontend/
+│   ├── src/
+│   └── public/
 │
-├── docker-compose.yml
+├── src/
+│   ├── api.py
+│   ├── embeddings.py
+│   ├── ingestion.py
+│   ├── repository.py
+│   ├── search.py
+│   └── vector_index.py
+│
+├── tests/
+│
+├── docs/
+│   └── screenshots/
+│
 ├── requirements.txt
 └── README.md
 ```
 
-## Search Workflow
+## Screenshots
 
-1. User uploads a document.
-2. The document is converted into embeddings.
-3. Embeddings are stored in PostgreSQL.
-4. HNSW index is updated.
-5. User submits a search query.
-6. Query is embedded.
-7. Similar vectors are retrieved.
-8. Matching documents are returned ranked by similarity.
+### Dashboard
 
-## Benchmarking
+<img width="1853" height="921" alt="dashboard" src="https://github.com/user-attachments/assets/0a2befb9-e7c2-4d76-b3c2-c02e1df577c2" />
 
-The project includes a benchmarking framework that compares:
 
-* Brute-force vector search
-* HNSW Approximate Nearest Neighbor search
+### Document Upload
 
-Metrics evaluated:
+<img width="1855" height="912" alt="upload" src="https://github.com/user-attachments/assets/7f229c73-48fb-4166-80b8-1fae45c937b4" />
 
-* Search latency
-* Throughput
-* Recall@K
 
-This allows performance analysis and demonstrates the effectiveness of ANN indexing compared to exhaustive search.
+### Semantic Search
+
+<img width="1857" height="907" alt="search" src="https://github.com/user-attachments/assets/5bbfb1a9-ca35-4cde-bb16-c8cb4772b30e" />
+
+
+## How It Works
+
+### 1. Document Ingestion
+
+Text documents are uploaded through the frontend and processed by the ingestion pipeline.
+
+### 2. Embedding Generation
+
+Sentence Transformer models convert documents into dense vector representations.
+
+### 3. Vector Indexing
+
+Embeddings are inserted into an HNSW index for efficient Approximate Nearest Neighbor retrieval.
+
+### 4. Semantic Retrieval
+
+User queries are embedded into vector space and matched against indexed documents using similarity search.
+
+## Example
+
+Document:
+
+```text
+Lionel Messi won multiple Ballon d'Or awards.
+Argentina won the FIFA World Cup.
+```
+
+Query:
+
+```text
+soccer
+```
+
+Result:
+
+```text
+Lionel Messi won multiple Ballon d'Or awards.
+Argentina won the FIFA World Cup.
+```
+
+Even though the keyword "soccer" does not appear in the document, semantic similarity enables correct retrieval.
 
 ## Running Locally
 
-### Backend
+### Clone Repository
+
+```bash
+git clone https://github.com/S-Vageesh/vector-search-engine.git
+cd vector-search-engine
+```
+
+### Install Dependencies
 
 ```bash
 pip install -r requirements.txt
-python -m pytest
-uvicorn src.api:app --reload
 ```
 
-### Frontend
+### Configure Environment
+
+Create a `.env` file:
+
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/vector_search
+```
+
+### Run Backend
+
+```bash
+python -m uvicorn src.api:app --reload
+```
+
+Backend:
+
+```text
+http://127.0.0.1:8000
+```
+
+### Run Frontend
 
 ```bash
 cd frontend
@@ -135,46 +192,57 @@ npm install
 npm run dev
 ```
 
-## Test Results
-
-Current automated test suite:
+Frontend:
 
 ```text
-22 tests passed
+http://localhost:5173
 ```
 
-The tests cover:
+## Testing
 
-* Document ingestion
-* Repository operations
-* Search functionality
-* API endpoints
-* HNSW indexing
-* Benchmark validation
+Run all tests:
+
+```bash
+python -m pytest
+```
+
+Example:
+
+```text
+22 passed
+```
 
 ## Future Improvements
 
-* Hybrid keyword + vector search
-* Multi-user support
-* Distributed indexing
-* Advanced metadata filtering
-* Query analytics dashboard
+* Hybrid keyword + semantic retrieval
 * Reranking models
-* Cloud-native deployment
+* PDF ingestion support
+* User authentication
+* Distributed indexing
+* Vector database benchmarks
+* Cloud deployment pipeline
 
-## Learning Outcomes
+## Key Concepts Demonstrated
 
-This project provided hands-on experience with:
-
-* Database system design
-* Vector databases
-* Approximate Nearest Neighbor algorithms
-* API development
-* Full-stack integration
-* Performance benchmarking
-* Software testing
-* Git and GitHub workflows
+* Semantic Search
+* Dense Vector Embeddings
+* Approximate Nearest Neighbor Search
+* HNSW Graph Indexing
+* Vector Databases
+* Information Retrieval
+* FastAPI Development
+* React Frontend Engineering
+* PostgreSQL Integration
+* Full-Stack Software Development
 
 ## License
 
-MIT License
+This project is licensed under the MIT License.
+
+## Author
+
+S Vageesh 
+
+Mathematics and Computing Student
+
+Focused on Databases, Information Retrieval, Machine Learning, and Systems Engineering.
